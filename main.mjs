@@ -1,24 +1,23 @@
 import md5 from 'md5';
 
-trans();
-
-function trans() {
-
-    let originalText;
-    let element;
-
-    if (typeof document !== "undefined" && document.getElementById) {
-        // 前端（浏览器）环境
-        element = document.getElementById("pageTitle");
-        if (element) {
-            originalText = element.innerText;
-        } else {
-            originalText = "页面标题未找到！";
-        }
+if (typeof document !== "undefined" && document.getElementById) {
+    // 前端（浏览器）环境
+    let element = document.getElementById("pageTitle");
+    if (element) {
+        trans(element);
     } else {
-        // 后端（Node.js）环境
-        originalText = "你好，世界！";
+        console.log("页面标题未找到！");
     }
+} else {
+    // 后端（Node.js）环境
+    originalText = "你好，世界！";
+}
+
+function trans(element) {
+
+    let originalText = element.innerText;
+
+
     // 百度翻译API接口信息
     let appid = '20240911002147778';  // 替换为你的AppID
     let key = 'AaYsHo7Fs5dtURwYi9hq';       // 替换为你的密钥
@@ -50,9 +49,7 @@ function trans() {
     // 调用翻译函数并输出结果
     translateText(originalText, to).then(translatedText => {
         console.log(translatedText);
-        if (typeof document !== "undefined") {
-            element.innerHTML = `<h2>${translatedText}</h2>`;
-        }
+        element.innerHTML = `<h2>${translatedText}</h2>`;
     }).catch(error => {
         console.error("Translation error:", error);
     });
