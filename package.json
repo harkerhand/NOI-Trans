@@ -1,3 +1,8 @@
 {
-  "proxy": "http://api.fanyi.baidu.com/api/trans/vip/translate"
+  "proxy": "http://fanyi-api.baidu.com/api/trans/vip/translate",
+  "devDependencies": {
+    "md5": "^2.3.0",
+    "webpack": "^5.94.0",
+    "webpack-cli": "^5.1.4"
+  }
 }

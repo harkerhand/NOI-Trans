@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "version": "1.0",
+    "name": "NOI-Trans",
+    "description": "自动把中文标题变成英文",
+    "content_scripts": [
+        {
+            "matches": [
+                "http://noi.openjudge.cn/*",
+                "http://www.noi.openjudge.cn/*"
+            ],
+            "js": [
+                "content_scripts.js"
+            ]
+        }
+    ],
+    "icons": {
+        "16": "icons/icon16.png",
+        "32": "icons/icon32.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    }
+}
