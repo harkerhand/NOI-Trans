@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Page Translator</title>
+  <style>
+    body {
+      width: 300px;
+      font-family: Arial, sans-serif;
+    }
+
+    #savedPagesList {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    #savedPagesList li {
+      padding: 5px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    #savedPagesList li button {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Saved Pages</h1>
+  <input type="text" id="urlInput" placeholder="Enter URL here" />
+  <input type="text" id="elementIdInput" placeholder="Enter elementId here" />
+  <button id="addPageButton">Add</button>
+  <ul id="savedPagesList"></ul>
+  <script src="popup.js"></script>
+</body>
+
+</html>

@@ -1,57 +1,99 @@
 import md5 from 'md5';
 
-if (typeof document !== "undefined" && document.getElementById) {
-    // 前端（浏览器）环境
-    let element = document.getElementById("pageTitle");
-    if (element) {
-        trans(element);
-    } else {
-        console.log("页面标题未找到！");
-    }
-} else {
-    // 后端（Node.js）环境
-    originalText = "你好，世界！";
+// 监听标签页更新事件
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    const url = tab.url;
+
+    // 检查该URL是否在已存储的网页列表中
+    chrome.storage.local.get(['savedPages'], (result) => {
+      const savedPages = result.savedPages || [];
+
+      // 遍历所有存储的URL，并检查是否匹配当前打开的URL
+      const matchedPage = savedPages.find((savedPage) => {
+        return isWildcardMatch(url, savedPage.url);  // 检查URL匹配
+      });
+
+      if (matchedPage) {
+        // 如果URL匹配存储的通配符URL，执行翻译逻辑，传入对应的elementId
+        chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          func: translate,
+          args: [matchedPage.elementId] // 传入存储的elementId
+        });
+      }
+    });
+  }
+});
+
+
+// 匹配通配符URL
+function isWildcardMatch(url, wildcardUrl) {
+  const regexPattern = wildcardUrl
+    .replace(/\./g, '\\.')
+    .replace(/\*/g, '.*');
+
+  const regex = new RegExp(`^${regexPattern}$`);
+  return regex.test(url);
 }
 
-function trans(element) {
+// 处理来自内容脚本的翻译请求
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'md5') {
+    const md5Text = md5(message.text);
+    sendResponse({ md5Text });
+  }
+  return true;  // 保证异步消息处理
+});
 
-    let originalText = element.innerText;
 
+async function translate(elementId) {
+  let pageTitleElement = document.getElementById(elementId);
 
-    // 百度翻译API接口信息
-    let appid = '20240911002147778';  // 替换为你的AppID
-    let key = 'AaYsHo7Fs5dtURwYi9hq';       // 替换为你的密钥
-    let salt = (new Date).getTime();  // 随机数
-    let from = 'auto';  // 自动检测语言
-    let to = 'en';      // 目标语言为英语
+  if (pageTitleElement) {
+    let originalText = pageTitleElement.innerText;
 
-    // 生成签名
-    function generateSign(query, salt, appid, key) {
-        let str = appid + query + salt + key;
-        return md5(str) // 使用 crypto 模块进行 MD5 哈希
+    try {
+      let translatedText = await trans(originalText);  // 等待翻译结果
+      pageTitleElement.innerHTML = `<h2>${translatedText}</h2>`;
+    } catch (error) {
+      console.error("Translation failed:", error);
     }
+  } else {
+    console.log("未找到页面标题元素");
+  }
 
-    // 调用百度翻译API
-    async function translateText(text, targetLanguage) {
-        let sign = generateSign(text, salt, appid, key);
+  async function trans(originalText) {
+    const appid = '20240911002147778';
+    const key = 'AaYsHo7Fs5dtURwYi9hq';
+    const salt = (new Date()).getTime();
+    const from = 'auto';
+    const to = 'en';
 
-        let url = `https://fanyi-api.baidu.com/api/trans/vip/translate?q=${encodeURIComponent(text)}&from=${from}&to=${targetLanguage}&appid=${appid}&salt=${salt}&sign=${sign}`;
-        let urlTest = "https://fanyi-api.baidu.com/api/trans/vip/translate?q=apple&from=en&to=zh&appid=2015063000000001&salt=1435660288&sign=f89f9594663708c1605f3d736d01d2d4";
-        console.log(url);
+    const sign = await getMd5(appid + originalText + salt + key);  // 获取 MD5 签名
 
-        let response = await fetch(url);
-        let result = await response.json();
-        console.log(result);
-        return result.trans_result[0].dst;
+    const url = `https://fanyi-api.baidu.com/api/trans/vip/translate?q=${encodeURIComponent(originalText)}&from=${from}&to=${to}&appid=${appid}&salt=${salt}&sign=${sign}`;
+    console.log(url);
+
+    try {
+      const response = await fetch(url);
+      const result = await response.json();
+      console.log(result);
+      return result.trans_result[0].dst;
+    } catch (error) {
+      throw new Error("Error fetching translation: " + error);
     }
+  }
 
-
-    // 调用翻译函数并输出结果
-    translateText(originalText, to).then(translatedText => {
-        console.log(translatedText);
-        element.innerHTML = `<h2>${translatedText}</h2>`;
-    }).catch(error => {
-        console.error("Translation error:", error);
+  function getMd5(str) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ type: "md5", text: str }, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(response.md5Text);
+        }
+      });
     });
-
+  }
 }
